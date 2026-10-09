@@ -18,6 +18,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
 
   @override
   void initState() {
@@ -39,7 +41,62 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  List<Reminder> _filter(List<Reminder> items) {
+    if (_query.isEmpty) return items;
+    return items
+        .where((r) =>
+            r.label.toLowerCase().contains(_query) ||
+            r.note.toLowerCase().contains(_query))
+        .toList();
+  }
+
+  Widget _buildSearchField() {
+    return SizedBox(
+      height: 46,
+      child: TextField(
+        controller: _searchController,
+        onChanged: (v) => setState(() => _query = v.trim().toLowerCase()),
+        textInputAction: TextInputAction.search,
+        style: const TextStyle(fontSize: 14),
+        decoration: InputDecoration(
+          hintText: 'Search reminders or alarms...',
+          hintStyle: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+          prefixIcon:
+              Icon(Icons.search_rounded, size: 20, color: Colors.grey.shade500),
+          prefixIconConstraints:
+              const BoxConstraints(minWidth: 42, minHeight: 42),
+          suffixIcon: _query.isEmpty
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  splashRadius: 18,
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _query = '');
+                  },
+                ),
+          isDense: true,
+          filled: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFF6366F1), width: 1.5),
+          ),
+        ),
+      ),
+    );
   }
 
   String _formatDateTime(DateTime dt) {
@@ -52,6 +109,22 @@ class _HomeScreenState extends State<HomeScreen>
     if (date == today) return 'Today, $time';
     if (date == tomorrow) return 'Tomorrow, $time';
     return '${DateFormat('dd MMM').format(dt)}, $time';
+  }
+
+  Widget _buildTab(IconData icon, String label, int? count) {
+    return Tab(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18),
+            const SizedBox(width: 6),
+            Text(count == null ? label : '$label ($count)'),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _scheduleReminder(Reminder r) async {
@@ -75,21 +148,23 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ReminderProvider>();
-    final upcoming = provider.upcoming;
-    final completed = provider.completed;
+    final all = [...provider.upcoming, ...provider.completed];
+    final upcomingList = _filter(provider.upcoming);
+    final completedList = _filter(provider.completed);
+    final allList = _filter(all);
 
     return Scaffold(
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
             SliverAppBar(
-              expandedHeight: 140,
+              expandedHeight: 210,
               floating: true,
               pinned: true,
               elevation: 0,
               scrolledUnderElevation: 0,
               flexibleSpace: FlexibleSpaceBar(
-                titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
+                titlePadding: const EdgeInsets.only(left: 20, bottom: 112),
                 title: Text(
                   'RemindMe',
                   style: TextStyle(
@@ -111,40 +186,39 @@ class _HomeScreenState extends State<HomeScreen>
                   },
                 ),
               ],
-              bottom: TabBar(
-                controller: _tabController,
-                tabs: [
-                  Tab(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.upcoming, size: 18),
-                        const SizedBox(width: 6),
-                        Text('Upcoming (${upcoming.length})'),
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(104),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
+                      child: _buildSearchField(),
+                    ),
+                    TabBar(
+                      controller: _tabController,
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+                      indicatorColor: const Color(0xFF6366F1),
+                      labelColor: const Color(0xFF6366F1),
+                      unselectedLabelColor: Colors.grey.shade600,
+                      labelStyle: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      tabs: [
+                        _buildTab(Icons.upcoming_rounded, 'Upcoming',
+                            provider.upcoming.length),
+                        _buildTab(Icons.check_circle_outline, 'Completed',
+                            provider.completed.length),
+                        _buildTab(Icons.history_rounded, 'All', all.length),
                       ],
                     ),
-                  ),
-                  Tab(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.check_circle_outline, size: 18),
-                        const SizedBox(width: 6),
-                        Text('Completed (${completed.length})'),
-                      ],
-                    ),
-                  ),
-                  const Tab(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.history, size: 18),
-                        SizedBox(width: 6),
-                        Text('All'),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ];
@@ -152,9 +226,9 @@ class _HomeScreenState extends State<HomeScreen>
         body: TabBarView(
           controller: _tabController,
           children: [
-            _buildReminderList(upcoming, isUpcoming: true),
-            _buildReminderList(completed, isCompleted: true),
-            _buildAllReminders(upcoming, completed),
+            _buildReminderList(upcomingList, isUpcoming: true),
+            _buildReminderList(completedList, isCompleted: true),
+            _buildAllReminders(allList),
           ],
         ),
       ),
@@ -189,7 +263,9 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildReminderList(List<Reminder> items,
       {bool isUpcoming = false, bool isCompleted = false}) {
     if (items.isEmpty) {
-      return _buildEmptyState(isUpcoming, isCompleted);
+      return _query.isNotEmpty
+          ? _buildNoResults()
+          : _buildEmptyState(isUpcoming, isCompleted);
     }
 
     return ListView.builder(
@@ -251,10 +327,11 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildAllReminders(List<Reminder> upcoming, List<Reminder> completed) {
-    final all = [...upcoming, ...completed];
+  Widget _buildAllReminders(List<Reminder> all) {
     if (all.isEmpty) {
-      return _buildEmptyState(true, false);
+      return _query.isNotEmpty
+          ? _buildNoResults()
+          : _buildEmptyState(true, false);
     }
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
@@ -409,6 +486,34 @@ class _HomeScreenState extends State<HomeScreen>
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildNoResults() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_off_rounded, size: 56, color: Colors.grey.shade400),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              'No results for "${_searchController.text}"',
+              textAlign: TextAlign.center,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Try a different keyword',
+            style: TextStyle(color: Colors.grey.shade500),
+          ),
+        ],
       ),
     );
   }
