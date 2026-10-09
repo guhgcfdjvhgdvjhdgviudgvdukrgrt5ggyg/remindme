@@ -53,7 +53,7 @@ class RemindMeApp extends StatelessWidget {
             elevation: 0,
             scrolledUnderElevation: 0,
           ),
-          cardTheme: CardTheme(
+          cardTheme: CardThemeData(
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
@@ -105,7 +105,7 @@ class RemindMeApp extends StatelessWidget {
             elevation: 0,
             scrolledUnderElevation: 0,
           ),
-          cardTheme: CardTheme(
+          cardTheme: CardThemeData(
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
