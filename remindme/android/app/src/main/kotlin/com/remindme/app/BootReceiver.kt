@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.database.sqlite.SQLiteDatabase
 import android.os.Build
-import io.flutter.plugin.common.MethodChannel
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -21,13 +20,15 @@ class BootReceiver : BroadcastReceiver() {
     }
 
     private fun rescheduleAlarms(context: Context) {
+        var db: SQLiteDatabase? = null
+        var cursor: android.database.Cursor? = null
         try {
             val dbPath = context.getDatabasePath("remindme.db")
             if (!dbPath.exists()) return
 
-            val db = SQLiteDatabase.openDatabase(dbPath.path, null, SQLiteDatabase.OPEN_READONLY)
-            val cursor = db.rawQuery(
-                "SELECT id, dateTime, title, ringtone FROM reminders WHERE isActive = 1 AND isDone = 0",
+            db = SQLiteDatabase.openDatabase(dbPath.path, null, SQLiteDatabase.OPEN_READONLY)
+            cursor = db.rawQuery(
+                "SELECT id, dateTime, title, ringtone, snoozeMinutes FROM reminders WHERE isActive = 1 AND isDone = 0",
                 null
             )
 
@@ -39,6 +40,7 @@ class BootReceiver : BroadcastReceiver() {
                 val timeMillis = cursor.getLong(1)
                 val title = cursor.getString(2) ?: "Reminder"
                 val ringtone = cursor.getString(3) ?: "Default"
+                val snoozeMinutes = cursor.getInt(4)
 
                 if (timeMillis <= now) continue
 
@@ -46,6 +48,7 @@ class BootReceiver : BroadcastReceiver() {
                     putExtra("id", id)
                     putExtra("title", title)
                     putExtra("ringtone", ringtone)
+                    putExtra("snoozeMinutes", snoozeMinutes)
                 }
                 val pendingIntent = PendingIntent.getBroadcast(
                     context,
@@ -60,10 +63,11 @@ class BootReceiver : BroadcastReceiver() {
                     alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
                 }
             }
-            cursor.close()
-            db.close()
         } catch (e: Exception) {
             e.printStackTrace()
+        } finally {
+            cursor?.close()
+            db?.close()
         }
     }
 }

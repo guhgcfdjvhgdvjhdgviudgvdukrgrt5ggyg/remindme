@@ -132,18 +132,12 @@ class _HomeScreenState extends State<HomeScreen>
 
   Future<void> _scheduleReminder(Reminder r) async {
     if (r.id != null && r.isActive && !r.isDone) {
-      await NotificationService.scheduleNotification(
-        id: r.id!,
-        title: r.label,
-        body: r.note.isNotEmpty ? r.note : 'Reminder',
-        scheduledTime: r.dateTime,
-        ringtone: r.ringtone,
-      );
       await AlarmService.scheduleOneShot(
         id: r.id!,
         dateTime: r.dateTime,
         title: r.label,
         ringtone: r.ringtone,
+        snoozeMinutes: r.snoozeMinutes,
       );
     }
   }
@@ -284,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen>
       itemBuilder: (context, i) {
         final r = items[i];
         return Dismissible(
-          key: Key('reminder_${r.id}'),
+          key: ValueKey('reminder_${r.id}_${r.label}_${r.dateTime.millisecondsSinceEpoch}'),
           direction: isCompleted
               ? DismissDirection.endToStart
               : DismissDirection.horizontal,
@@ -325,10 +319,8 @@ class _HomeScreenState extends State<HomeScreen>
             return false;
           },
           onDismissed: (direction) {
-            if (isCompleted && direction == DismissDirection.endToStart) {
-              if (r.id != null) {
-                context.read<ReminderProvider>().deleteReminder(r.id!);
-              }
+            if (direction == DismissDirection.endToStart && r.id != null) {
+              context.read<ReminderProvider>().deleteReminder(r.id!);
             }
           },
           child: _buildReminderCard(r, isUpcoming, isCompleted),
@@ -350,7 +342,7 @@ class _HomeScreenState extends State<HomeScreen>
         final r = all[i];
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: _buildReminderCard(r, !r.isDone, r.isDone),
+          child: _buildReminderCard(r, false, r.isDone),
         );
       },
     );

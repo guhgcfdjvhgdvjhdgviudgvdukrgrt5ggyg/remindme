@@ -4,7 +4,6 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.database.sqlite.SQLiteDatabase
 import android.os.Build
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -22,7 +21,8 @@ class MainActivity : FlutterActivity() {
                     val timeMillis = call.argument<Long>("timeMillis") ?: 0L
                     val title = call.argument<String>("title") ?: "Reminder"
                     val ringtone = call.argument<String>("ringtone") ?: "Default"
-                    scheduleAlarm(id, timeMillis, title, ringtone)
+                    val snoozeMinutes = call.argument<Int>("snoozeMinutes") ?: 10
+                    scheduleAlarm(id, timeMillis, title, ringtone, snoozeMinutes)
                     result.success(true)
                 }
                 "cancelAlarm" -> {
@@ -35,7 +35,8 @@ class MainActivity : FlutterActivity() {
                     val timeMillis = call.argument<Long>("timeMillis") ?: 0L
                     val title = call.argument<String>("title") ?: "Reminder"
                     val ringtone = call.argument<String>("ringtone") ?: "Default"
-                    rescheduleAlarm(id, timeMillis, title, ringtone)
+                    val snoozeMinutes = call.argument<Int>("snoozeMinutes") ?: 10
+                    rescheduleAlarm(id, timeMillis, title, ringtone, snoozeMinutes)
                     result.success(true)
                 }
                 "cancelNotification" -> {
@@ -56,12 +57,13 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    private fun scheduleAlarm(id: Int, timeMillis: Long, title: String, ringtone: String) {
+    private fun scheduleAlarm(id: Int, timeMillis: Long, title: String, ringtone: String, snoozeMinutes: Int = 10) {
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(this, AlarmReceiver::class.java).apply {
             putExtra("id", id)
             putExtra("title", title)
             putExtra("ringtone", ringtone)
+            putExtra("snoozeMinutes", snoozeMinutes)
         }
         val pendingIntent = PendingIntent.getBroadcast(
             this, id, intent,
@@ -74,9 +76,9 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    private fun rescheduleAlarm(id: Int, timeMillis: Long, title: String, ringtone: String) {
+    private fun rescheduleAlarm(id: Int, timeMillis: Long, title: String, ringtone: String, snoozeMinutes: Int = 10) {
         cancelAlarm(id)
-        scheduleAlarm(id, timeMillis, title, ringtone)
+        scheduleAlarm(id, timeMillis, title, ringtone, snoozeMinutes)
     }
 
     private fun cancelAlarm(id: Int) {
@@ -90,15 +92,16 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun cancelFlutterNotification(id: Int) {
-        // Best-effort: cancel via shared preferences used by flutter_local_notifications
         try {
-            val prefs = getSharedPreferences("flutter_local_notifications", Context.MODE_PRIVATE)
-            prefs.edit().remove("notification_$id").apply()
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            nm.cancel(id)
         } catch (_: Exception) {}
     }
 
     private fun snoozeFlutterNotification(id: Int, timeMillis: Long, title: String, ringtone: String) {
-        // Best-effort: handled via method channel to Dart if engine is alive
-        // The native alarm reschedule is the primary mechanism
+        try {
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            nm.cancel(id)
+        } catch (_: Exception) {}
     }
 }

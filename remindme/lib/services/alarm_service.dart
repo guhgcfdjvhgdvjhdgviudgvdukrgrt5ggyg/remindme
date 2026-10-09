@@ -14,6 +14,7 @@ class AlarmService {
     required DateTime dateTime,
     required String title,
     required String ringtone,
+    int snoozeMinutes = 10,
   }) async {
     try {
       await _channel.invokeMethod('scheduleAlarm', {
@@ -21,6 +22,7 @@ class AlarmService {
         'timeMillis': dateTime.millisecondsSinceEpoch,
         'title': title,
         'ringtone': ringtone,
+        'snoozeMinutes': snoozeMinutes,
       });
     } catch (_) {}
   }

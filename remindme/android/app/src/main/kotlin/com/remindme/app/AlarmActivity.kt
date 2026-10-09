@@ -1,6 +1,7 @@
 package com.remindme.app
 
 import android.app.AlarmManager
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -55,6 +56,7 @@ class AlarmActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        stopRingtone()
         handleIntent(intent)
     }
 
@@ -73,8 +75,10 @@ class AlarmActivity : AppCompatActivity() {
         val ringtone = intent?.getStringExtra("ringtone") ?: "Default"
 
         stopRingtone()
+        cancelNotification(id)
 
-        val newTime = System.currentTimeMillis() + 10 * 60 * 1000
+        val snoozeMinutes = intent?.getIntExtra("snoozeMinutes", 10) ?: 10
+        val newTime = System.currentTimeMillis() + snoozeMinutes * 60 * 1000L
         updateReminderTime(id, newTime)
 
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -101,6 +105,7 @@ class AlarmActivity : AppCompatActivity() {
 
         stopRingtone()
         updateReminderDone(id)
+        cancelNotification(id)
 
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val alarmIntent = Intent(this, AlarmReceiver::class.java)
@@ -114,33 +119,37 @@ class AlarmActivity : AppCompatActivity() {
     }
 
     private fun updateReminderTime(id: Int, newTimeMillis: Long) {
+        var db: SQLiteDatabase? = null
         try {
             val dbPath = getDatabasePath("remindme.db")
             if (!dbPath.exists()) return
-            val db = SQLiteDatabase.openDatabase(dbPath.path, null, SQLiteDatabase.OPEN_READWRITE)
+            db = SQLiteDatabase.openDatabase(dbPath.path, null, SQLiteDatabase.OPEN_READWRITE)
             val values = android.content.ContentValues().apply {
                 put("dateTime", newTimeMillis)
             }
             db.update("reminders", values, "id = ?", arrayOf(id.toString()))
-            db.close()
         } catch (e: Exception) {
             e.printStackTrace()
+        } finally {
+            db?.close()
         }
     }
 
     private fun updateReminderDone(id: Int) {
+        var db: SQLiteDatabase? = null
         try {
             val dbPath = getDatabasePath("remindme.db")
             if (!dbPath.exists()) return
-            val db = SQLiteDatabase.openDatabase(dbPath.path, null, SQLiteDatabase.OPEN_READWRITE)
+            db = SQLiteDatabase.openDatabase(dbPath.path, null, SQLiteDatabase.OPEN_READWRITE)
             val values = android.content.ContentValues().apply {
                 put("isDone", 1)
                 put("isActive", 0)
             }
             db.update("reminders", values, "id = ?", arrayOf(id.toString()))
-            db.close()
         } catch (e: Exception) {
             e.printStackTrace()
+        } finally {
+            db?.close()
         }
     }
 
@@ -200,6 +209,13 @@ class AlarmActivity : AppCompatActivity() {
             @Suppress("DEPRECATION")
             vibrator?.vibrate(longArrayOf(0, 500, 1000), 0)
         }
+    }
+
+    private fun cancelNotification(id: Int) {
+        try {
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm.cancel(id)
+        } catch (_: Exception) {}
     }
 
     private fun stopRingtone() {

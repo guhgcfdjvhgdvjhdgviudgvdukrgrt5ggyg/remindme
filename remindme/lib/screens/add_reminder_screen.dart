@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/reminder.dart';
 import '../providers/reminder_provider.dart';
 import '../services/notification_service.dart';
+import '../services/alarm_service.dart';
 import '../widgets/ringtone_picker.dart';
 
 class AddReminderScreen extends StatefulWidget {
@@ -120,6 +121,17 @@ class _AddReminderScreenState extends State<AddReminderScreen>
     var dt = _selectedDate;
     if (dt.isBefore(now)) {
       dt = now.add(const Duration(minutes: 1));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Time was in the past — set to 1 minute from now'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
     }
 
     final r = Reminder(
@@ -138,18 +150,20 @@ class _AddReminderScreenState extends State<AddReminderScreen>
 
     int? remId = r.id;
     if (isEditing) {
+      await NotificationService.cancel(r.id!);
+      await AlarmService.cancel(r.id!);
       await context.read<ReminderProvider>().updateReminder(r);
     } else {
       remId = await context.read<ReminderProvider>().addReminder(r);
     }
 
     if (remId != null) {
-      await NotificationService.scheduleNotification(
+      await AlarmService.scheduleOneShot(
         id: remId,
+        dateTime: dt,
         title: r.label,
-        body: r.note.isNotEmpty ? r.note : 'Reminder',
-        scheduledTime: dt,
         ringtone: r.ringtone,
+        snoozeMinutes: r.snoozeMinutes,
       );
     }
 
@@ -189,6 +203,7 @@ class _AddReminderScreenState extends State<AddReminderScreen>
                 if (confirmed == true && widget.reminder?.id != null && context.mounted) {
                   await context.read<ReminderProvider>().deleteReminder(widget.reminder!.id!);
                   await NotificationService.cancel(widget.reminder!.id!);
+                  await AlarmService.cancel(widget.reminder!.id!);
                   if (context.mounted) Navigator.pop(context);
                 }
               },

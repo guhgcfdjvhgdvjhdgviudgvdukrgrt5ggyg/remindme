@@ -10,11 +10,13 @@ class AlarmReceiver : BroadcastReceiver() {
         val id = intent.getIntExtra("id", 0)
         val title = intent.getStringExtra("title") ?: "Reminder"
         val ringtone = intent.getStringExtra("ringtone") ?: "Default"
+        val snoozeMinutes = intent.getIntExtra("snoozeMinutes", 10)
 
         val serviceIntent = Intent(context, AlarmService::class.java).apply {
             putExtra("id", id)
             putExtra("title", title)
             putExtra("ringtone", ringtone)
+            putExtra("snoozeMinutes", snoozeMinutes)
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

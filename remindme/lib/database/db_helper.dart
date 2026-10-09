@@ -48,7 +48,8 @@ class DBHelper {
 
   Future<int> insertReminder(Reminder reminder) async {
     final d = await db;
-    return await d.insert('reminders', reminder.toMap());
+    final map = reminder.toMap()..remove('id');
+    return await d.insert('reminders', map);
   }
 
   Future<List<Reminder>> getReminders() async {

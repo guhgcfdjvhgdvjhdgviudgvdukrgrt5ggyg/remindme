@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import androidx.core.app.NotificationCompat
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -31,11 +32,13 @@ class AlarmService : Service() {
         val id = intent?.getIntExtra("id", 0) ?: 0
         val title = intent?.getStringExtra("title") ?: "Reminder"
         val ringtone = intent?.getStringExtra("ringtone") ?: "Default"
+        val snoozeMinutes = intent?.getIntExtra("snoozeMinutes", 10) ?: 10
 
         val alarmIntent = Intent(this, AlarmActivity::class.java).apply {
             putExtra("id", id)
             putExtra("title", title)
             putExtra("ringtone", ringtone)
+            putExtra("snoozeMinutes", snoozeMinutes)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
 
