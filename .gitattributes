@@ -1,0 +1,2 @@
+remindme-release.apk filter=lfs diff=lfs merge=lfs -text
+remindme/remindme-apk-fixed.apk filter=lfs diff=lfs merge=lfs -text
