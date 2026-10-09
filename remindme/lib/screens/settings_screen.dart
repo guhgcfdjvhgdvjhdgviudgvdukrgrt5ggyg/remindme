@@ -154,10 +154,10 @@ class SettingsScreen extends StatelessWidget {
           padding: const EdgeInsets.only(left: 4, bottom: 8, top: 8),
           child: Text(
             title,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: const Color(0xFF6366F1),
+              color: Color(0xFF6366F1),
               letterSpacing: 0.5,
             ),
           ),
@@ -184,7 +184,7 @@ class SettingsScreen extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: const Color(0xFF6366F1).withOpacity(0.1),
+          color: const Color(0xFF6366F1).withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, color: const Color(0xFF6366F1), size: 20),

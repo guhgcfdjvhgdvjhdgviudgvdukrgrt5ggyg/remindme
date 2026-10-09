@@ -25,7 +25,9 @@ class _HomeScreenState extends State<HomeScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    Future.microtask(() => context.read<ReminderProvider>().loadReminders());
+    Future.microtask(() {
+      if (mounted) context.read<ReminderProvider>().loadReminders();
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _requestNotificationPermission();
     });
@@ -252,7 +254,7 @@ class _HomeScreenState extends State<HomeScreen>
               },
             ),
           );
-          if (mounted) context.read<ReminderProvider>().loadReminders();
+          if (context.mounted) context.read<ReminderProvider>().loadReminders();
         },
         icon: const Icon(Icons.add_rounded),
         label: const Text('New Reminder'),
@@ -363,7 +365,7 @@ class _HomeScreenState extends State<HomeScreen>
               builder: (_) => AddReminderScreen(reminder: r),
             ),
           );
-          if (mounted) context.read<ReminderProvider>().loadReminders();
+          if (context.mounted) context.read<ReminderProvider>().loadReminders();
         },
         borderRadius: BorderRadius.circular(20),
         child: Padding(
@@ -374,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen>
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
@@ -527,7 +529,7 @@ class _HomeScreenState extends State<HomeScreen>
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: const Color(0xFF6366F1).withOpacity(0.1),
+              color: const Color(0xFF6366F1).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -537,7 +539,7 @@ class _HomeScreenState extends State<HomeScreen>
                       ? Icons.alarm_off_rounded
                       : Icons.inbox_rounded,
               size: 56,
-              color: const Color(0xFF6366F1).withOpacity(0.5),
+              color: const Color(0xFF6366F1).withValues(alpha: 0.5),
             ),
           ),
           const SizedBox(height: 24),

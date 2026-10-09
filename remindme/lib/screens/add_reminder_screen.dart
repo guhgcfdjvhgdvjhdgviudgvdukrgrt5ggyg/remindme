@@ -20,9 +20,9 @@ class _AddReminderScreenState extends State<AddReminderScreen>
   final _noteController = TextEditingController();
   late DateTime _selectedDate;
   RepeatType _repeatType = RepeatType.none;
-  int _snoozeMinutes = 10;
+  final int _snoozeMinutes = 10;
   String _ringtone = 'Default';
-  bool _vibrate = true;
+  final bool _vibrate = true;
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
 
@@ -68,6 +68,7 @@ class _AddReminderScreenState extends State<AddReminderScreen>
       lastDate: DateTime(2100),
     );
     if (date == null) return;
+    if (!mounted) return;
     final time = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(_selectedDate),
@@ -147,7 +148,7 @@ class _AddReminderScreenState extends State<AddReminderScreen>
         id: remId,
         title: r.label,
         body: r.note.isNotEmpty ? r.note : 'Reminder',
-        scheduledTime: r.dateTime,
+        scheduledTime: dt,
         ringtone: r.ringtone,
       );
     }
@@ -185,10 +186,10 @@ class _AddReminderScreenState extends State<AddReminderScreen>
                     ],
                   ),
                 );
-                if (confirmed == true && widget.reminder?.id != null && mounted) {
+                if (confirmed == true && widget.reminder?.id != null && context.mounted) {
                   await context.read<ReminderProvider>().deleteReminder(widget.reminder!.id!);
                   await NotificationService.cancel(widget.reminder!.id!);
-                  Navigator.pop(context);
+                  if (context.mounted) Navigator.pop(context);
                 }
               },
             ),
@@ -239,7 +240,7 @@ class _AddReminderScreenState extends State<AddReminderScreen>
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF6366F1).withOpacity(0.1),
+                            color: const Color(0xFF6366F1).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(
@@ -297,7 +298,7 @@ class _AddReminderScreenState extends State<AddReminderScreen>
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF6366F1).withOpacity(0.1),
+                            color: const Color(0xFF6366F1).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(

@@ -114,7 +114,7 @@ class _RingtonePickerSheetState extends State<RingtonePickerSheet> {
                       height: 40,
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? const Color(0xFF6366F1).withOpacity(0.1)
+                            ? const Color(0xFF6366F1).withValues(alpha: 0.1)
                             : Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(10),
                       ),

@@ -66,7 +66,7 @@ class NotificationService {
             playSound: false,
             ongoing: true,
           ),
-          iOS: DarwinNotificationDetails(
+          iOS: const DarwinNotificationDetails(
             presentAlert: true,
             presentBadge: true,
             presentSound: false,
