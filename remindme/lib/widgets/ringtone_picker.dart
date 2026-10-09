@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../models/reminder.dart';
@@ -14,6 +15,7 @@ class _RingtonePickerSheetState extends State<RingtonePickerSheet> {
   late String _selected;
   final _player = AudioPlayer();
   String? _playing;
+  StreamSubscription? _completeSub;
 
   @override
   void initState() {
@@ -23,6 +25,7 @@ class _RingtonePickerSheetState extends State<RingtonePickerSheet> {
 
   @override
   void dispose() {
+    _completeSub?.cancel();
     _player.stop();
     _player.dispose();
     super.dispose();
@@ -67,7 +70,8 @@ class _RingtonePickerSheetState extends State<RingtonePickerSheet> {
     setState(() => _playing = name);
     try {
       await _player.play(AssetSource(_assetFor(name)));
-      _player.onPlayerComplete.listen((_) {
+      _completeSub?.cancel();
+      _completeSub = _player.onPlayerComplete.listen((_) {
         if (mounted && _playing == name) {
           setState(() => _playing = null);
         }

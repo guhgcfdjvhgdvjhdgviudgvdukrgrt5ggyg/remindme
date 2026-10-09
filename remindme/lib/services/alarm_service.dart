@@ -1,47 +1,34 @@
-import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class AlarmService {
-  static bool _initialized = false;
+  static const _channel = MethodChannel('com.remindme.app/alarm');
 
   static Future<void> init() async {
-    if (_initialized) return;
     try {
-      await AndroidAlarmManager.initialize();
-      _initialized = true;
-    } catch (e) {
-      // Ignore
-    }
+      await _channel.invokeMethod('init');
+    } catch (_) {}
   }
 
   static Future<void> scheduleOneShot({
     required int id,
     required DateTime dateTime,
+    required String title,
+    required String ringtone,
   }) async {
     try {
-      await AndroidAlarmManager.oneShotAt(
-        dateTime,
-        id,
-        callback,
-        allowWhileIdle: true,
-        exact: true,
-        wakeup: true,
-        rescheduleOnReboot: true,
-      );
-    } catch (e) {
-      // Ignore
-    }
+      await _channel.invokeMethod('scheduleAlarm', {
+        'id': id,
+        'timeMillis': dateTime.millisecondsSinceEpoch,
+        'title': title,
+        'ringtone': ringtone,
+      });
+    } catch (_) {}
   }
 
   static Future<void> cancel(int id) async {
     try {
-      await AndroidAlarmManager.cancel(id);
-    } catch (e) {
-      // Ignore
-    }
+      await _channel.invokeMethod('cancelAlarm', {'id': id});
+    } catch (_) {}
   }
-}
-
-@pragma('vm:entry-point')
-void callback(int id) async {
-  // Placeholder - native side will handle full-screen activity
 }

@@ -5,6 +5,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../providers/reminder_provider.dart';
 import '../models/reminder.dart';
 import '../services/notification_service.dart';
+import '../services/alarm_service.dart';
 import 'add_reminder_screen.dart';
 import 'settings_screen.dart';
 
@@ -138,12 +139,19 @@ class _HomeScreenState extends State<HomeScreen>
         scheduledTime: r.dateTime,
         ringtone: r.ringtone,
       );
+      await AlarmService.scheduleOneShot(
+        id: r.id!,
+        dateTime: r.dateTime,
+        title: r.label,
+        ringtone: r.ringtone,
+      );
     }
   }
 
   Future<void> _cancelReminder(Reminder r) async {
     if (r.id != null) {
       await NotificationService.cancel(r.id!);
+      await AlarmService.cancel(r.id!);
     }
   }
 

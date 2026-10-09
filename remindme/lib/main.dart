@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/reminder_provider.dart';
 import 'screens/home_screen.dart';
@@ -134,9 +133,4 @@ class RemindMeApp extends StatelessWidget {
   }
 }
 
-Future<void> requestNotificationPermission(BuildContext context) async {
-  final status = await Permission.notification.status;
-  if (!status.isGranted) {
-    await Permission.notification.request();
-  }
-}
+

@@ -7,8 +7,9 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
-import androidx.core.app.NotificationCompat
+import android.os.Looper
 
 class AlarmService : Service() {
     override fun onCreate() {
@@ -27,16 +28,20 @@ class AlarmService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val id = intent?.getIntExtra("id", 0) ?: 0
         val title = intent?.getStringExtra("title") ?: "Reminder"
         val ringtone = intent?.getStringExtra("ringtone") ?: "Default"
-        val alarmIntent = Intent(this, AlarmActivity::class.java)
-        alarmIntent.putExtra("title", title)
-        alarmIntent.putExtra("ringtone", ringtone)
-        alarmIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+
+        val alarmIntent = Intent(this, AlarmActivity::class.java).apply {
+            putExtra("id", id)
+            putExtra("title", title)
+            putExtra("ringtone", ringtone)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        }
 
         val pending = PendingIntent.getActivity(
             this,
-            System.currentTimeMillis().toInt(),
+            id,
             alarmIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -54,7 +59,12 @@ class AlarmService : Service() {
 
         startForeground(1, notification)
         startActivity(alarmIntent)
-        stopForeground(false)
+
+        Handler(Looper.getMainLooper()).postDelayed({
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        }, 5000)
+
         return START_NOT_STICKY
     }
 
