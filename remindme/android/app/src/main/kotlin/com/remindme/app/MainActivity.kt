@@ -131,9 +131,9 @@ class MainActivity : FlutterActivity() {
                 }
             }
 
-            val pm = packageManager
+            val powerManager = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
             val batOk = Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
-                pm.isIgnoringBatteryOptimizations(packageName)
+                powerManager.isIgnoringBatteryOptimizations(packageName)
             if (!batOk) {
                 val i = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
                 i.data = Uri.parse("package:$packageName")
