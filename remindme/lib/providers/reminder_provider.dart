@@ -35,7 +35,7 @@ class ReminderProvider with ChangeNotifier {
   }
 
   List<Reminder> get upcoming => _reminders
-      .where((r) => !r.isDone && r.isActive)
+      .where((r) => !r.isDone)
       .toList();
 
   List<Reminder> get completed => _reminders

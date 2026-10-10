@@ -448,13 +448,16 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildReminderCard(Reminder r, bool isUpcoming, bool isCompleted) {
     final isPast = r.dateTime.isBefore(DateTime.now()) && !r.isDone;
+    final isInactive = !r.isActive && !r.isDone;
     final id = r.id;
     final selected = id != null && _selectedIds.contains(id);
     final color = isCompleted
         ? Colors.green
-        : isPast
-            ? Colors.orange
-            : const Color(0xFF6366F1);
+        : isInactive
+            ? Colors.grey
+            : isPast
+                ? Colors.orange
+                : const Color(0xFF6366F1);
 
     return Card(
       shape: RoundedRectangleBorder(
@@ -510,9 +513,11 @@ class _HomeScreenState extends State<HomeScreen>
                   child: Icon(
                     isCompleted
                         ? Icons.check_circle
-                        : isPast
-                            ? Icons.warning_rounded
-                            : Icons.alarm,
+                        : isInactive
+                            ? Icons.alarm_off
+                            : isPast
+                                ? Icons.warning_rounded
+                                : Icons.alarm,
                     color: color,
                     size: 26,
                   ),
@@ -531,7 +536,9 @@ class _HomeScreenState extends State<HomeScreen>
                         fontSize: 16,
                         decoration:
                             isCompleted ? TextDecoration.lineThrough : null,
-                        color: isCompleted ? Colors.grey : null,
+                        color: (isCompleted || isInactive)
+                            ? Colors.grey
+                            : null,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -564,6 +571,22 @@ class _HomeScreenState extends State<HomeScreen>
                                 : r.repeatType == RepeatType.weekly
                                     ? 'Weekly'
                                     : 'Monthly',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                        if (isInactive) ...[
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.notifications_off_outlined,
+                            size: 14,
+                            color: Colors.grey.shade500,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            'Alarm off',
                             style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: 12,
