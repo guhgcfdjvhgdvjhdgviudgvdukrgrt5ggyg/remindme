@@ -125,8 +125,9 @@ class AlarmActivity : AppCompatActivity() {
                         AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent
                     )
                 } else {
-                    alarmManager.setExactAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent
+                    alarmManager.setAlarmClock(
+                        AlarmManager.AlarmClockInfo(triggerAtMillis, pendingIntent),
+                        pendingIntent
                     )
                 }
             } else {
@@ -134,6 +135,10 @@ class AlarmActivity : AppCompatActivity() {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
             }
         } catch (e: SecurityException) {
+            alarmManager.setAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent
+            )
+        } catch (e: Exception) {
             alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
         }
     }

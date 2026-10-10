@@ -55,12 +55,33 @@ class _HomeScreenState extends State<HomeScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    Future.microtask(() {
-      if (mounted) context.read<ReminderProvider>().loadReminders();
+    Future.microtask(() async {
+      if (!mounted) return;
+      await context.read<ReminderProvider>().loadReminders();
+      if (mounted) await _rescheduleActiveAlarms();
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _requestNotificationPermission();
     });
+  }
+
+  // Re-arm every active, not-yet-due reminder when the app opens. This heals
+  // alarms that were dropped while the app was closed/force-stopped so the
+  // alarm keeps working in the background without opening the app.
+  Future<void> _rescheduleActiveAlarms() async {
+    final provider = context.read<ReminderProvider>();
+    final now = DateTime.now();
+    for (final r in provider.reminders) {
+      if (r.id != null && r.isActive && !r.isDone && r.dateTime.isAfter(now)) {
+        await AlarmService.scheduleOneShot(
+          id: r.id!,
+          dateTime: r.dateTime,
+          title: r.label,
+          ringtone: r.ringtone,
+          snoozeMinutes: r.snoozeMinutes,
+        );
+      }
+    }
   }
 
   Future<void> _requestNotificationPermission() async {
@@ -160,7 +181,10 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _scheduleReminder(Reminder r) async {
-    if (r.id != null && r.isActive && !r.isDone) {
+    if (r.id != null &&
+        r.isActive &&
+        !r.isDone &&
+        r.dateTime.isAfter(DateTime.now())) {
       await AlarmService.scheduleOneShot(
         id: r.id!,
         dateTime: r.dateTime,

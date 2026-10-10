@@ -66,8 +66,9 @@ class BootReceiver : BroadcastReceiver() {
                                 AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent
                             )
                         } else {
-                            alarmManager.setExactAndAllowWhileIdle(
-                                AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent
+                            alarmManager.setAlarmClock(
+                                AlarmManager.AlarmClockInfo(timeMillis, pendingIntent),
+                                pendingIntent
                             )
                         }
                     } catch (e: SecurityException) {
