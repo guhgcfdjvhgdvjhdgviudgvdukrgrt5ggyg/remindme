@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/reminder_provider.dart';
+import 'providers/theme_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'services/notification_service.dart';
@@ -26,21 +27,36 @@ void main() async {
   } catch (_) {}
   final prefs = await SharedPreferences.getInstance();
   final showOnboarding = prefs.getBool('showOnboarding') ?? true;
-  runApp(RemindMeApp(showOnboarding: showOnboarding));
+  final themeProvider = await ThemeProvider.load();
+  runApp(RemindMeApp(
+    showOnboarding: showOnboarding,
+    themeProvider: themeProvider,
+  ));
 }
 
 class RemindMeApp extends StatelessWidget {
   final bool showOnboarding;
-  const RemindMeApp({super.key, required this.showOnboarding});
+  final ThemeProvider themeProvider;
+  const RemindMeApp({
+    super.key,
+    required this.showOnboarding,
+    required this.themeProvider,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ReminderProvider(),
-      child: MaterialApp(
-        title: 'RemindMe',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: themeProvider),
+        ChangeNotifierProvider(create: (_) => ReminderProvider()),
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (context, theme, _) {
+          return MaterialApp(
+            title: 'RemindMe',
+            debugShowCheckedModeBanner: false,
+            themeMode: theme.mode,
+            theme: ThemeData(
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(
             seedColor: const Color(0xFF6366F1),
@@ -51,6 +67,10 @@ class RemindMeApp extends StatelessWidget {
             centerTitle: true,
             elevation: 0,
             scrolledUnderElevation: 0,
+            systemOverlayStyle: SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.dark,
+            ),
           ),
           cardTheme: CardThemeData(
             elevation: 0,
@@ -103,6 +123,10 @@ class RemindMeApp extends StatelessWidget {
             centerTitle: true,
             elevation: 0,
             scrolledUnderElevation: 0,
+            systemOverlayStyle: SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.light,
+            ),
           ),
           cardTheme: CardThemeData(
             elevation: 0,
@@ -128,6 +152,8 @@ class RemindMeApp extends StatelessWidget {
           ),
         ),
         home: showOnboarding ? const OnboardingScreen() : const HomeScreen(),
+      );
+        },
       ),
     );
   }

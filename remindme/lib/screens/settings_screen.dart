@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../providers/theme_provider.dart';
 import '../services/alarm_service.dart';
 import 'onboarding_screen.dart';
 
@@ -9,6 +11,7 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.watch<ThemeProvider>();
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
@@ -24,15 +27,8 @@ class SettingsScreen extends StatelessWidget {
                 context,
                 icon: Icons.brightness_6_outlined,
                 title: 'Theme',
-                subtitle: 'Light / Dark (System default)',
-                onTap: () {},
-              ),
-              _buildTile(
-                context,
-                icon: Icons.language_outlined,
-                title: 'Language',
-                subtitle: 'English',
-                onTap: () {},
+                subtitle: theme.label,
+                onTap: () => _showThemeSheet(context, theme),
               ),
             ],
           ),
@@ -175,6 +171,55 @@ class SettingsScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _showThemeSheet(BuildContext context, ThemeProvider theme) {
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'Choose theme',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+              _modeOption(ctx, theme, ThemeMode.system,
+                  Icons.brightness_auto_outlined, 'System default'),
+              _modeOption(ctx, theme, ThemeMode.light,
+                  Icons.light_mode_outlined, 'Light'),
+              _modeOption(ctx, theme, ThemeMode.dark,
+                  Icons.dark_mode_outlined, 'Dark'),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _modeOption(BuildContext ctx, ThemeProvider theme, ThemeMode mode,
+      IconData icon, String label) {
+    final selected = theme.mode == mode;
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: selected ? const Color(0xFF6366F1) : Colors.grey,
+      ),
+      title: Text(label),
+      trailing: selected
+          ? const Icon(Icons.check_circle, color: Color(0xFF6366F1))
+          : null,
+      onTap: () {
+        theme.setMode(mode);
+        Navigator.pop(ctx);
+      },
     );
   }
 
