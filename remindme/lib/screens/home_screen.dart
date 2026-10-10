@@ -447,17 +447,16 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildReminderCard(Reminder r, bool isUpcoming, bool isCompleted) {
-    final isPast = r.dateTime.isBefore(DateTime.now()) && !r.isDone;
-    final isInactive = !r.isActive && !r.isDone;
+    final hasFired = r.dateTime.isBefore(DateTime.now()) && !r.isDone;
+    final isInactive = !r.isActive && !r.isDone && !hasFired;
+    final completedLook = isCompleted || hasFired;
     final id = r.id;
     final selected = id != null && _selectedIds.contains(id);
-    final color = isCompleted
+    final color = completedLook
         ? Colors.green
         : isInactive
             ? Colors.grey
-            : isPast
-                ? Colors.orange
-                : const Color(0xFF6366F1);
+            : const Color(0xFF6366F1);
 
     return Card(
       shape: RoundedRectangleBorder(
@@ -511,13 +510,11 @@ class _HomeScreenState extends State<HomeScreen>
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
-                    isCompleted
+                    completedLook
                         ? Icons.check_circle
                         : isInactive
                             ? Icons.alarm_off
-                            : isPast
-                                ? Icons.warning_rounded
-                                : Icons.alarm,
+                            : Icons.alarm,
                     color: color,
                     size: 26,
                   ),
@@ -535,8 +532,8 @@ class _HomeScreenState extends State<HomeScreen>
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
                         decoration:
-                            isCompleted ? TextDecoration.lineThrough : null,
-                        color: (isCompleted || isInactive)
+                            completedLook ? TextDecoration.lineThrough : null,
+                        color: (completedLook || isInactive)
                             ? Colors.grey
                             : null,
                       ),
@@ -610,7 +607,19 @@ class _HomeScreenState extends State<HomeScreen>
                   ],
                 ),
               ),
-              if (isUpcoming && !_selectionMode)
+              if (isUpcoming && !_selectionMode && hasFired)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Text(
+                    'Completed',
+                    style: TextStyle(
+                      color: Colors.green.shade600,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              if (isUpcoming && !_selectionMode && !hasFired)
                 Switch(
                   value: r.isActive,
                   onChanged: (v) async {
@@ -625,7 +634,7 @@ class _HomeScreenState extends State<HomeScreen>
                     }
                   },
                 ),
-              if (isCompleted && !_selectionMode)
+              if (isCompleted && !_selectionMode && r.isDone)
                 IconButton(
                   icon: const Icon(Icons.restore, color: Colors.grey),
                   onPressed: () async {

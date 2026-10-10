@@ -3,6 +3,8 @@ import '../database/db_helper.dart';
 import '../models/reminder.dart';
 
 class ReminderProvider with ChangeNotifier {
+  static const Duration completedRetention = Duration(days: 2);
+
   List<Reminder> _reminders = [];
   List<Reminder> get reminders => _reminders;
 
@@ -34,11 +36,16 @@ class ReminderProvider with ChangeNotifier {
     await loadReminders();
   }
 
-  List<Reminder> get upcoming => _reminders
-      .where((r) => !r.isDone)
-      .toList();
+  // A reminder whose time has passed is considered "completed" but stays in
+  // the Upcoming list for `completedRetention` (2 days) before moving to the
+  // Completed tab. Manually completed (swipe) reminders move immediately.
+  List<Reminder> get upcoming => _reminders.where((r) {
+        if (r.isDone) return false;
+        return DateTime.now().difference(r.dateTime) < completedRetention;
+      }).toList();
 
-  List<Reminder> get completed => _reminders
-      .where((r) => r.isDone)
-      .toList();
+  List<Reminder> get completed => _reminders.where((r) {
+        if (r.isDone) return true;
+        return DateTime.now().difference(r.dateTime) >= completedRetention;
+      }).toList();
 }
