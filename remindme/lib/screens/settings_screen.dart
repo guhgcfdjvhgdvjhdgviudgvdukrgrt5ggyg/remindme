@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/alarm_service.dart';
 import 'onboarding_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -69,7 +70,42 @@ class SettingsScreen extends StatelessWidget {
                 title: 'Exact Alarms',
                 subtitle: 'Required for precise timing',
                 onTap: () async {
-                  await openAppSettings();
+                  final allowed = await AlarmService.canScheduleExactAlarms();
+                  if (allowed) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Exact alarms are already allowed'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  } else {
+                    await AlarmService.requestExactAlarmPermission();
+                  }
+                },
+              ),
+              _buildTile(
+                context,
+                icon: Icons.lock_outline,
+                title: 'Full-Screen Alarm',
+                subtitle: 'Show alarm on the lock screen',
+                onTap: () async {
+                  final allowed = await AlarmService.canUseFullScreenIntent();
+                  if (allowed) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Full-screen alarms are already enabled',
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  } else {
+                    await AlarmService.requestFullScreenIntentPermission();
+                  }
                 },
               ),
               _buildTile(

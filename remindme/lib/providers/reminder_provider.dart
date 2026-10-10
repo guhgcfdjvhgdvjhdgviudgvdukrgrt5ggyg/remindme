@@ -27,6 +27,13 @@ class ReminderProvider with ChangeNotifier {
     await loadReminders();
   }
 
+  Future<void> deleteMany(List<int> ids) async {
+    for (final id in ids) {
+      await DBHelper.instance.deleteReminder(id);
+    }
+    await loadReminders();
+  }
+
   List<Reminder> get upcoming => _reminders
       .where((r) => !r.isDone && r.isActive)
       .toList();

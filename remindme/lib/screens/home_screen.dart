@@ -21,6 +21,35 @@ class _HomeScreenState extends State<HomeScreen>
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
+  final Set<int> _selectedIds = {};
+
+  bool get _selectionMode => _selectedIds.isNotEmpty;
+
+  void _clearSelection() {
+    setState(() => _selectedIds.clear());
+  }
+
+  void _toggleSelection(Reminder r) {
+    final id = r.id;
+    if (id == null) return;
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
+  Future<void> _deleteSelected() async {
+    final ids = _selectedIds.toList();
+    setState(() => _selectedIds.clear());
+    for (final id in ids) {
+      await NotificationService.cancel(id);
+      await AlarmService.cancel(id);
+    }
+    await context.read<ReminderProvider>().deleteMany(ids);
+  }
 
   @override
   void initState() {
@@ -236,7 +265,10 @@ class _HomeScreenState extends State<HomeScreen>
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      bottomNavigationBar: _selectionMode ? _buildSelectionBar() : null,
+      floatingActionButton: _selectionMode
+          ? null
+          : FloatingActionButton.extended(
         onPressed: () async {
           await Navigator.push(
             context,
@@ -264,6 +296,44 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  Widget _buildSelectionBar() {
+    return Material(
+      elevation: 12,
+      color: Theme.of(context).colorScheme.surface,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.close_rounded),
+                tooltip: 'Cancel selection',
+                onPressed: _clearSelection,
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  '${_selectedIds.length} selected',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                tooltip: 'Delete selected',
+                onPressed: _selectedIds.isEmpty
+                    ? null
+                    : () => _deleteSelected(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildReminderList(List<Reminder> items,
       {bool isUpcoming = false, bool isCompleted = false}) {
     if (items.isEmpty) {
@@ -279,9 +349,11 @@ class _HomeScreenState extends State<HomeScreen>
         final r = items[i];
         return Dismissible(
           key: ValueKey('reminder_${r.id}_${r.label}_${r.dateTime.millisecondsSinceEpoch}'),
-          direction: isCompleted
-              ? DismissDirection.endToStart
-              : DismissDirection.horizontal,
+          direction: _selectionMode
+              ? DismissDirection.none
+              : isCompleted
+                  ? DismissDirection.endToStart
+                  : DismissDirection.horizontal,
           background: Container(
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.only(left: 24),
@@ -303,7 +375,9 @@ class _HomeScreenState extends State<HomeScreen>
             child: const Icon(Icons.delete, color: Colors.white, size: 28),
           ),
           confirmDismiss: (direction) async {
-            if (isCompleted && direction == DismissDirection.endToStart) {
+            if (_selectionMode) return false;
+            if ((isCompleted || _selectedIds.contains(r.id)) &&
+                direction == DismissDirection.endToStart) {
               return true;
             }
             if (direction == DismissDirection.startToEnd) {
@@ -350,6 +424,8 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildReminderCard(Reminder r, bool isUpcoming, bool isCompleted) {
     final isPast = r.dateTime.isBefore(DateTime.now()) && !r.isDone;
+    final id = r.id;
+    final selected = id != null && _selectedIds.contains(id);
     final color = isCompleted
         ? Colors.green
         : isPast
@@ -357,8 +433,20 @@ class _HomeScreenState extends State<HomeScreen>
             : const Color(0xFF6366F1);
 
     return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: selected
+            ? const BorderSide(color: Color(0xFF6366F1), width: 2)
+            : BorderSide.none,
+      ),
+      color:
+          selected ? const Color(0xFF6366F1).withValues(alpha: 0.06) : null,
       child: InkWell(
         onTap: () async {
+          if (_selectionMode) {
+            _toggleSelection(r);
+            return;
+          }
           await Navigator.push(
             context,
             MaterialPageRoute(
@@ -367,28 +455,44 @@ class _HomeScreenState extends State<HomeScreen>
           );
           if (context.mounted) context.read<ReminderProvider>().loadReminders();
         },
+        onLongPress: () => _toggleSelection(r),
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
+              if (selected)
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(
+                    Icons.check_circle,
+                    color: Color(0xFF6366F1),
+                    size: 26,
+                  ),
+                )
+              else
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    isCompleted
+                        ? Icons.check_circle
+                        : isPast
+                            ? Icons.warning_rounded
+                            : Icons.alarm,
+                    color: color,
+                    size: 26,
+                  ),
                 ),
-                child: Icon(
-                  isCompleted
-                      ? Icons.check_circle
-                      : isPast
-                          ? Icons.warning_rounded
-                          : Icons.alarm,
-                  color: color,
-                  size: 26,
-                ),
-              ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -459,7 +563,7 @@ class _HomeScreenState extends State<HomeScreen>
                   ],
                 ),
               ),
-              if (isUpcoming)
+              if (isUpcoming && !_selectionMode)
                 Switch(
                   value: r.isActive,
                   onChanged: (v) async {
@@ -474,7 +578,7 @@ class _HomeScreenState extends State<HomeScreen>
                     }
                   },
                 ),
-              if (isCompleted)
+              if (isCompleted && !_selectionMode)
                 IconButton(
                   icon: const Icon(Icons.restore, color: Colors.grey),
                   onPressed: () async {

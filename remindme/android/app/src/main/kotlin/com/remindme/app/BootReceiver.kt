@@ -58,8 +58,23 @@ class BootReceiver : BroadcastReceiver() {
                 )
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+                    try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                            !alarmManager.canScheduleExactAlarms()
+                        ) {
+                            alarmManager.setAndAllowWhileIdle(
+                                AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent
+                            )
+                        } else {
+                            alarmManager.setExactAndAllowWhileIdle(
+                                AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent
+                            )
+                        }
+                    } catch (e: SecurityException) {
+                        alarmManager.set(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+                    }
                 } else {
+                    @Suppress("DEPRECATION")
                     alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
                 }
             }

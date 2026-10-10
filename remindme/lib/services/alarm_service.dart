@@ -32,4 +32,32 @@ class AlarmService {
       await _channel.invokeMethod('cancelAlarm', {'id': id});
     } catch (_) {}
   }
+
+  static Future<bool> canUseFullScreenIntent() async {
+    try {
+      return await _channel.invokeMethod('canUseFullScreenIntent') ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<void> requestFullScreenIntentPermission() async {
+    try {
+      await _channel.invokeMethod('requestFullScreenIntentPermission');
+    } catch (_) {}
+  }
+
+  static Future<bool> canScheduleExactAlarms() async {
+    try {
+      return await _channel.invokeMethod('canScheduleExactAlarms') ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<void> requestExactAlarmPermission() async {
+    try {
+      await _channel.invokeMethod('requestExactAlarmPermission');
+    } catch (_) {}
+  }
 }

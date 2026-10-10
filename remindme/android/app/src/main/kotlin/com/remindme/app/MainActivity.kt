@@ -52,6 +52,46 @@ class MainActivity : FlutterActivity() {
                     snoozeFlutterNotification(id, timeMillis, title, ringtone)
                     result.success(true)
                 }
+                "canUseFullScreenIntent" -> {
+                    val nm = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                    val allowed = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        nm.canUseFullScreenIntent()
+                    } else {
+                        true
+                    }
+                    result.success(allowed)
+                }
+                "requestFullScreenIntentPermission" -> {
+                    try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                            val i = Intent(android.provider.Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT)
+                            i.data = android.net.Uri.parse("package:$packageName")
+                            startActivity(i)
+                        }
+                    } catch (_: Exception) {
+                    }
+                    result.success(true)
+                }
+                "canScheduleExactAlarms" -> {
+                    val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                    val allowed = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        am.canScheduleExactAlarms()
+                    } else {
+                        true
+                    }
+                    result.success(allowed)
+                }
+                "requestExactAlarmPermission" -> {
+                    try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            val i = Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                            i.data = android.net.Uri.parse("package:$packageName")
+                            startActivity(i)
+                        }
+                    } catch (_: Exception) {
+                    }
+                    result.success(true)
+                }
                 else -> result.notImplemented()
             }
         }
@@ -69,10 +109,33 @@ class MainActivity : FlutterActivity() {
             this, id, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
-        } else {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent)
+        exactOrInexact(alarmManager, timeMillis, pendingIntent)
+    }
+
+    private fun exactOrInexact(
+        alarmManager: AlarmManager,
+        triggerAtMillis: Long,
+        pendingIntent: PendingIntent
+    ) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                    !alarmManager.canScheduleExactAlarms()
+                ) {
+                    alarmManager.setAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent
+                    )
+                } else {
+                    alarmManager.setExactAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent
+                    )
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+            }
+        } catch (e: SecurityException) {
+            alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
         }
     }
 
