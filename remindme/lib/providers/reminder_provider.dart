@@ -3,8 +3,6 @@ import '../database/db_helper.dart';
 import '../models/reminder.dart';
 
 class ReminderProvider with ChangeNotifier {
-  static const Duration completedRetention = Duration(days: 2);
-
   List<Reminder> _reminders = [];
   List<Reminder> get reminders => _reminders;
 
@@ -36,16 +34,28 @@ class ReminderProvider with ChangeNotifier {
     await loadReminders();
   }
 
-  // A reminder whose time has passed is considered "completed" but stays in
-  // the Upcoming list for `completedRetention` (2 days) before moving to the
-  // Completed tab. Manually completed (swipe) reminders move immediately.
-  List<Reminder> get upcoming => _reminders.where((r) {
-        if (r.isDone) return false;
-        return DateTime.now().difference(r.dateTime) < completedRetention;
-      }).toList();
+  // Upcoming shows only reminders due within the next 48 hours.
+  // Alarms due later appear only in the "All" tab.
+  // When an alarm's time passes (completes) it moves to the Completed tab.
+  static const Duration upcomingWindow = Duration(hours: 48);
+
+  List<Reminder> get upcoming {
+    final now = DateTime.now();
+    final cutoff = now.add(upcomingWindow);
+    final list = _reminders.where((r) {
+      if (r.isDone) return false;
+      if (r.dateTime.isBefore(now)) return false;
+      return r.dateTime.isBefore(cutoff);
+    }).toList()
+      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    return list;
+  }
 
   List<Reminder> get completed => _reminders.where((r) {
         if (r.isDone) return true;
-        return DateTime.now().difference(r.dateTime) >= completedRetention;
+        return !r.dateTime.isAfter(DateTime.now());
       }).toList();
+
+  List<Reminder> get allReminders =>
+      _reminders.toList()..sort((a, b) => a.dateTime.compareTo(b.dateTime));
 }

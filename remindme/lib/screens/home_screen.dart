@@ -205,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ReminderProvider>();
-    final all = [...provider.upcoming, ...provider.completed];
+    final all = provider.allReminders;
     final upcomingList = _filter(provider.upcoming);
     final completedList = _filter(provider.completed);
     final allList = _filter(all);
